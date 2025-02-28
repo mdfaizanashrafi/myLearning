@@ -1,4 +1,9 @@
+from itertools import count
+
 import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from pandas import pivot_table
 
 '''
 a=[1,2,3,4]
@@ -157,12 +162,13 @@ print(f"Missing data filled with mean of the desired column:\n {handle_missing_d
 #=========================================
 #Changing Data Types: using .astype()
 data_transformation_dictionary = {'Name':['James','Jakob','John','Jerry','Jasmine'],
-                                  'Age':[20,25,30,35,40],
+                                  'Age':[20,40,30,35,33],
                                   'Address':['India','Pakistan','Bangladesh','India','China'],
                                   'Salary':[10000,20000,25000,23000,14000]}
 
 #converting into dataframes
 data_transformation_dictionary_df = pd.DataFrame(data_transformation_dictionary)
+print(data_transformation_dictionary_df)
 '''
 #transforming int dtype into float
 data_transformation_dictionary_df['Age'] = data_transformation_dictionary_df['Age'].astype(float)
@@ -224,12 +230,121 @@ print(data_transformation_dictionary_df)
 
 data_transformation_dictionary_df['Age Rank']=data_transformation_dictionary_df['Age'].rank()
 print(data_transformation_dictionary_df)
+
+#Grouping and Aggregation: summarize and analyze data based on certain categories
+#---------------------------------------------------------------------------------
+
+#Group by 'address' and calculate the mean age
+#Syntax: df.groupby(parenthesis_for_method_call/args)[square_bracets_to_specify_column_to_workwith)
+#['Age'] means take the age column from each group and
+#() for calling methods like groupby and mean
+#[] for indexing i.e selecting rows and columns
+#groupby(): creates a group based on unique value in args column
+grouped_data = data_transformation_dictionary_df.groupby('Address')['Age'].mean()
+print(grouped_data)
+
+#AGGREGATING DATA: after grouping, perform operations like sum,mean,count,etc.
+#Groupby 'City' and calculate multiple stats
+
+grouped_agg = data_transformation_dictionary_df.groupby('Address').agg({
+    'Age':['mean','min','max'],
+    'Salary':['sum','count']
+})
+print(grouped_agg)
+
+#PIVOT TABLES: SUPER SUMMARIZER: it allows to reshape and summarize data:
+#-------------------------------------------------------------
+
+#create a pivot table:
+pivot_table = pd.pivot_table(data_transformation_dictionary_df,values='Salary',index='Address',columns='Name',aggfunc='mean')
+print(pivot_table)
+
+# Plot heatmap
+plt.figure(figsize=(8, 5))
+sns.heatmap(pivot_table, annot=True, fmt=".1f", cmap="YlGnBu", linewidths=0.5, cbar=False)
+plt.title("Pivot Table: Mean Salary by Address and Name")
+plt.xlabel("Name")
+plt.ylabel("Address")
+plt.show()
+
+pivot_table= pd.pivot_table(data_transformation_dictionary_df,values='Salary',index='Address',columns='Name')
+print(pivot_table)
+
+#MELTING THE  PIVOT TABLE: melt(): used to reshape data from wide format to long format
+#reshape the pivot table into long format
+
+melted_df = pd.melt(pivot_table.reset_index(), #reset index to make "Adress" a column
+                    id_vars='Address',  #keep "address" as an identifier
+                    var_name='Name',  #name for the new "variable" column
+                    value_name='Salary')  #name for the new "value" column
+
+print(melted_df)
+
+Wide Format (Before Melting)
+┌──────────────┬─────────┬─────────┬─────────┬─────────┬──────────┐
+│ Address      │ James   │ Jakob   │ John    │ Jerry   │ Jasmine  │
+├──────────────┼─────────┼─────────┼─────────┼─────────┼──────────┤
+│ Bangladesh   │ NaN     │ NaN     │ 25000.0 │ NaN     │ NaN      │
+│ China        │ NaN     │ NaN     │ NaN     │ NaN     │ 14000.0  │
+│ India        │ 10000.0 │ NaN     │ NaN     │ 23000.0 │ NaN      │
+│ Pakistan     │ NaN     │ 20000.0 │ NaN     │ NaN     │ NaN      │
+└──────────────┴─────────┴─────────┴─────────┴─────────┴──────────┘
+
+             Apply pd.melt(id_vars='Address', var_name='Name', value_name='Salary')
+             ┌─────────────────────────────────────────────────────────────────────┐
+             ▼                                                                       ▼
+Long Format (After Melting)
+┌──────────────┬──────────┬─────────┐
+│ Address      │ Name     │ Salary  │
+├──────────────┼──────────┼─────────┤
+│ Bangladesh   │ James    │ NaN     │
+│ Bangladesh   │ Jakob    │ NaN     │
+│ Bangladesh   │ John     │ 25000.0 │
+│ Bangladesh   │ Jerry    │ NaN     │
+│ Bangladesh   │ Jasmine  │ NaN     │
+│ China        │ James    │ NaN     │
+│ China        │ Jakob    │ NaN     │
+│ China        │ John     │ NaN     │
+│ China        │ Jerry    │ NaN     │
+│ China        │ Jasmine  │ 14000.0 │
+│ India        │ James    │ 10000.0 │
+│ India        │ Jakob    │ NaN     │
+│ India        │ John     │ NaN     │
+│ India        │ Jerry    │ 23000.0 │
+│ India        │ Jasmine  │ NaN     │
+│ Pakistan     │ James    │ NaN     │
+│ Pakistan     │ Jakob    │ 20000.0 │
+│ Pakistan     │ John     │ NaN     │
+│ Pakistan     │ Jerry    │ NaN     │
+│ Pakistan     │ Jasmine  │ NaN     │
+└──────────────┴──────────┴─────────┘
+
+#PRACTICE EXERCISE:
+#Group your DataFrame by "City" and calculate the average salary for each city.
+mean_of_grouped = data_transformation_dictionary_df.groupby('Address')['Salary'].mean()
+print(mean_of_grouped)
+
+#Rank the "Age" column and add it as a new column called "Age_Rank".
+
+data_transformation_dictionary_df['Age_Rank']=data_transformation_dictionary_df['Age'].rank()
+print(data_transformation_dictionary_df)
 '''
-#Grouping and Aggregation:
-#----------------------------------------
+#==============================================================
+#ADVANCED LEVEL: Advanced Data Analysis and Optimization
+#==============================================================
 
+#TIME SERIES ANALYSIS:
+#-------------------------
 
+#Working with Date and Time:
 
+#convert a column to datetime:
+data_transformation_dictionary_df['Date']= pd.to_datetime(data_transformation_dictionary_df['Date'])
+
+#create a date range
+dates = pd.date_range('2025-01-10',periods=10,freq='D')
+
+print(data_transformation_dictionary_df.columns)
 
 
 
