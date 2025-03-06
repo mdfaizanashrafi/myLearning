@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from pandas import pivot_table
 
-'''
 a=[1,2,3,4]
 myvar=pd.Series(a)
 print(myvar)
@@ -524,7 +523,7 @@ print(data_transformation_dictionary_df)
 #combine multiple string columns into one using .str.cat()
 data_transformation_dictionary_df['Name_Salary']=data_transformation_dictionary_df['Name'].str.cat(data_transformation_dictionary_df['Address'],sep=' ')
 print(data_transformation_dictionary_df)
-'''
+
 #====================================================================================================
 #CUSTOM DATA CLEANING PIPELINES: a pipeline that ensures that all cleaning steps are applied consistently and can be resused for new datasets
 #
@@ -584,9 +583,29 @@ def data_cleaning_pipeline(df):
 cleaned_data = data_cleaning_pipeline(data_frame_pipeline_dictionary_df)
 print('\n Cleaned Data:')
 print(cleaned_data)
+#=========================================================
+#VISUALIZATION:
+#=========================================================
+#Built in plotting in Pandas: .plot()
 
+data={
+    'Year':[2022,2023,2024,2025],
+    'Sales':[100,300,200,250]
+}
+df_data = pd.DataFrame(data)
 
+print(df_data)
+#line plot
+df_data.plot(x='Year',y='Sales',kind='line',title='Sales Trend')
+plt.show()
 
+#Bar Plot for Categorical Data
+df_data.plot(x='Year',y='Sales',kind='bar',title='Sales by Year',color='red')
+plt.show()
+
+#Histogram:
+df_data['Sales'].plot(kind='hist',title='Sales Distribution',color='orange')
+plt.show()
 
 
 
