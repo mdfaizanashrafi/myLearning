@@ -161,13 +161,14 @@ print(f"Missing data filled with mean of the desired column:\n {handle_missing_d
 #DATA TRANSFORMATION:
 #=========================================
 #Changing Data Types: using .astype()
-data_transformation_dictionary = {'Name':['James','Jakob','John','Jerry','Jasmine'],
-                                  'Age':[20,40,30,35,33],
-                                  'Address':['India','Pakistan','Bangladesh','India','China'],
-                                  'Salary':[10000,20000,25000,23000,14000]}
+data_transformation_dictionary = {'Name':['James','Jakob','John','James','Jakob'],
+                                  'Age':[20,40,30,20,40],
+                                  'Address':['India','Pakistan','Bangladesh','India','Pakistan'],
+                                  'Salary':[10000,20000,25000,10000,20000]}
 
 #converting into dataframes
 data_transformation_dictionary_df = pd.DataFrame(data_transformation_dictionary)
+data_transformation_dictionary_df['Emails']=['james43@g.co','jakob67@f.co','john34@k.co','james86@g.co','jakob2001@f.co']
 print(data_transformation_dictionary_df)
 '''
 #transforming int dtype into float
@@ -279,7 +280,7 @@ melted_df = pd.melt(pivot_table.reset_index(), #reset index to make "Adress" a c
                     value_name='Salary')  #name for the new "value" column
 
 print(melted_df)
-
+"""
 Wide Format (Before Melting)
 ┌──────────────┬─────────┬─────────┬─────────┬─────────┬──────────┐
 │ Address      │ James   │ Jakob   │ John    │ Jerry   │ Jasmine  │
@@ -318,7 +319,7 @@ Long Format (After Melting)
 │ Pakistan     │ Jerry    │ NaN     │
 │ Pakistan     │ Jasmine  │ NaN     │
 └──────────────┴──────────┴─────────┘
-
+"""
 #PRACTICE EXERCISE:
 #Group your DataFrame by "City" and calculate the average salary for each city.
 mean_of_grouped = data_transformation_dictionary_df.groupby('Address')['Salary'].mean()
@@ -328,7 +329,7 @@ print(mean_of_grouped)
 
 data_transformation_dictionary_df['Age_Rank']=data_transformation_dictionary_df['Age'].rank()
 print(data_transformation_dictionary_df)
-'''
+
 #==============================================================
 #ADVANCED LEVEL: Advanced Data Analysis and Optimization
 #==============================================================
@@ -338,13 +339,200 @@ print(data_transformation_dictionary_df)
 
 #Working with Date and Time:
 
-#convert a column to datetime:
-data_transformation_dictionary_df['Date']= pd.to_datetime(data_transformation_dictionary_df['Date'])
+#add date column:
+data_transformation_dictionary_df['Date']= pd.to_datetime(['2024-01-01','2024-02-01','2024-03-01','2024-04-01','2024-05-01'])
 
-#create a date range
-dates = pd.date_range('2025-01-10',periods=10,freq='D')
+#set date as index
+data_transformation_dictionary_df.set_index('Date',inplace=True)
 
-print(data_transformation_dictionary_df.columns)
+#resample data from monthly to quarterly frequency
+quarterly_data=data_transformation_dictionary_df['Salary'].resample('QE').sum()  #QuarterlyEnd
+print(quarterly_data)
+
+#-----------------------------------------------------
+#Rolling Windows:
+#calculate moving avg or other stats over a sliding window
+
+#calculate a 7-day rolling mean
+rolling_mean = data_transformation_dictionary_df['Salary'].rolling(window=2).mean()
+print(rolling_mean)
+
+"""Date
+2024-01-01       NaN  # Not enough data for the first row
+2024-02-01    15000.0  # (10000 + 20000) / 2 = 15000
+2024-03-01    22500.0  # (20000 + 25000) / 2 = 22500
+2024-04-01    24000.0  # (25000 + 23000) / 2 = 24000
+2024-05-01    18500.0  # (23000 + 14000) / 2 = 18500
+Name: Salary, dtype: float64"""
+
+#===========================================
+#MultiIndex (Hierarchical Indexing):
+#=====================================
+#Creating a multiindex DataFrame
+#-----------------------------------
+#Creating a MultiIndex DataFrame based on Address and Name
+#Allows us to create multiple levels of indexing in a DF. This is useful when we want to
+#organize data hierarchically, such as grouping row by two or more categories
+
+arrays = [
+    data_transformation_dictionary_df['Address'],  #first level: Address
+    data_transformation_dictionary_df['Name']      #second level: Name
+]
+index=pd.MultiIndex.from_arrays(arrays,names=('Address','Name')) #combines arrays into tuples
+df_multi = pd.DataFrame({'Salary':data_transformation_dictionary_df['Salary'].values},
+                        index=index)
+#print(df_multi)
+
+#Selecting Data from a MultiIndex:
+#--------------------------------------
+#select rows where 'Address' is India
+print((df_multi.loc['India']))
+
+#Stacking and Unstacking
+#--------------------------------
+#Stack the DataFrame to convert columns into rows
+
+#Stack the DataFrame: process to convert columns into rows, it
+#"compresses" the data by moving column labels into the index, making it more compact
+stacked = df_multi.stack()
+print(stacked)
+
+#Unstacking: opposite of stacking, rows into columns, "expands" by moving index
+#levels into columns, making it wider
+
+unstacked = stacked.unstack()
+print(unstacked)
+
+#RESHAPING DATA:
+#=======================
+#Pivoting Data: converts data from long format to wide format.
+#organizzes rows and columns based on categories, makes data easier to read
+
+#create a pivot table
+pivot_table=pd.pivot_table(data_transformation_dictionary_df,values='Salary',index='Address',aggfunc='sum')
+print(pivot_table)
+
+#melting DataFrame: converts long format into wide format
+#syntax: pd.melt(DF,id_vars,value_vars,var_name,value_name)
+#id_vars: identifiers,value_vars:columns to metl,var_name:new var name,value_name:name for new value column
+melted=pd.melt(data_transformation_dictionary_df,id_vars=['Name'],value_vars=['Age','Salary'],var_name='Attribute',value_name='Value')
+print(melted)
+
+#PERFORMANCE OPTIMIZATION:
+#===================================
+#Memory Optimization:
+#--------------------------
+#check memory before optimization
+print(data_transformation_dictionary_df.memory_usage(deep=True))
+
+data_transformation_dictionary_df['Address']=data_transformation_dictionary_df['Address'].astype('category')
+print(data_transformation_dictionary_df.memory_usage())
+
+#Chunking Large Files:
+#-------------------------
+#simulate chunking by splitting the DF into smaller chunks
+chunk_size=2  #no. of rows per chunk
+#syntax: [df[start row:end row] for i in range(start,end,step)]
+chunks= [data_transformation_dictionary_df[i:i +chunk_size].copy() for i in range(0,len(data_transformation_dictionary_df),chunk_size)]
+
+#process each chunk:
+for idx, chunk in enumerate(chunks):
+    print(f"\n Processing Chunk {idx+1}:")
+    print(chunk)
+
+    #Example transformation: convert "Address" column to categorical
+    chunk['Address']=chunk['Address'].astype('category')
+
+    #perform some operation in chunk eg: avg salary
+    avg_salary = chunk['Salary'].mean()
+    print(f"Average Salary in Chunk {idx+1}:{avg_salary}")
+
+#=========================================================
+#ADVANCED DATA CLEANING:
+#=========================================================
+#Handling Duplicate Data: usedd for data cleaning and preprocessing. Helps reduce
+#unnecessarily increse memory usage
+#----------------------------------------------------------
+#identifying duplicates
+print(data_transformation_dictionary_df.duplicated()) #returns boolean
+
+#removing duplicate data
+print(data_transformation_dictionary_df.drop_duplicates())
+
+#Handling duplicates based on specific columns
+print(data_transformation_dictionary_df.duplicated(subset=['Name']))
+
+#remove duplicates based on column
+print(data_transformation_dictionary_df.drop_duplicates(subset=['Name']))
+
+#keep unique rows, removing all duplicates
+df_unique = data_transformation_dictionary_df.drop_duplicates(keep=False) #remove all rows that have duplicate, keepingn none
+print(df_unique)
+
+#counting duplicates
+count_duplicates = data_transformation_dictionary_df.duplicated().sum()
+print(count_duplicates)
+
+#marking duplicates without removing them
+data_transformation_dictionary_df['IsDuplicate']=data_transformation_dictionary_df.duplicated()
+print(data_transformation_dictionary_df)
+
+#STRING MANIPLATION:cleaning,transforming and extracting info from string data
+#---------------------------------------------------------------------------
+#accessing string method: .str accessor to apply string methods to column, vectorized
+
+data_transformation_dictionary_df['Upper_Case_Name']=data_transformation_dictionary_df['Name'].str.upper()
+print(data_transformation_dictionary_df)
+
+#common string manipulation tasks:
+#splitting strings:  .str.split(divider,expand=True)
+data_transformation_dictionary_df[['Username','Domain']]= data_transformation_dictionary_df['Emails'].str.split('@',expand=True)
+print(data_transformation_dictionary_df)
+
+#replacing substrings: .str.replace()
+data_transformation_dictionary_df['Domain']=data_transformation_dictionary_df['Domain'].str.replace('.co','.net',regex=False) #False inorder to treat the pattern as literal string
+#regex=False: replaces exact match of '.co' with '.net'
+print(data_transformation_dictionary_df)
+
+#Extracting Patterns:  .str.extract()
+# r'(\d+)': find and capture all sequences of digits in the string, \d for single digit, + for multiple digit. r: raw string, treat \ as literal string rather than escape char
+data_transformation_dictionary_df['Numeric_Part']=data_transformation_dictionary_df['Emails'].str.extract(r'(\d+)',expand=False)
+print(data_transformation_dictionary_df)
+
+#Stripping Whitespace: .str.strip(), .str.lstrip(), .str.rstrip()
+#removing unwanted spaces tabs,newlines from begining end our both side of a string
+#spaces, tabs(\t), newlines(\n), carriage returns(\r)
+
+# .strip()
+learn_stripping="   Hey Faizan, what are you doing?!  "
+cleaned_text = learn_stripping.strip() #removes whitespace from both ends of a string
+print(cleaned_text)                    #doesnot affect whitespace in the middle of the string
+
+# .lstrip(): removes white space from the left side of a string(begining)
+cleaned_text_begining = learn_stripping.lstrip()
+print(cleaned_text_begining)
+
+# .rstrip(): removes white space from the right side (end) of the string
+cleaned_text_end = learn_stripping.rstrip()
+print(cleaned_text_end)
+
+# Checking for Substrings:  .str.contains()  returns: boolean
+data_transformation_dictionary_df['Is_G']=data_transformation_dictionary_df['Emails'].str.contains('g.co',case=False)
+print(data_transformation_dictionary_df)
+
+#COMBINING STRING COLUMNS:  .str.cat()
+#combine multiple string columns into one using .str.cat()
+data_transformation_dictionary_df['Name_Salary']=data_transformation_dictionary_df['Name'].str.cat(data_transformation_dictionary_df['Address'],sep=' ')
+print(data_transformation_dictionary_df)
+'''
+#CUSTOM DATA CLEANING PIPELINES:
+
+
+
+
+
+
+
 
 
 
