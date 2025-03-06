@@ -157,7 +157,7 @@ print(filling_missing_values)
 #filling missing values with the mean of the column
 handle_missing_data_df['Age'] = handle_missing_data_df['Age'].fillna(handle_missing_data_df['Age'].mean())
 print(f"Missing data filled with mean of the desired column:\n {handle_missing_data_df}")
-'''
+
 #DATA TRANSFORMATION:
 #=========================================
 #Changing Data Types: using .astype()
@@ -170,7 +170,7 @@ data_transformation_dictionary = {'Name':['James','Jakob','John','James','Jakob'
 data_transformation_dictionary_df = pd.DataFrame(data_transformation_dictionary)
 data_transformation_dictionary_df['Emails']=['james43@g.co','jakob67@f.co','john34@k.co','james86@g.co','jakob2001@f.co']
 print(data_transformation_dictionary_df)
-'''
+
 #transforming int dtype into float
 data_transformation_dictionary_df['Age'] = data_transformation_dictionary_df['Age'].astype(float)
 print(data_transformation_dictionary_df)
@@ -525,7 +525,65 @@ print(data_transformation_dictionary_df)
 data_transformation_dictionary_df['Name_Salary']=data_transformation_dictionary_df['Name'].str.cat(data_transformation_dictionary_df['Address'],sep=' ')
 print(data_transformation_dictionary_df)
 '''
-#CUSTOM DATA CLEANING PIPELINES:
+#====================================================================================================
+#CUSTOM DATA CLEANING PIPELINES: a pipeline that ensures that all cleaning steps are applied consistently and can be resused for new datasets
+#
+#STEPS TO BUILD A CUSTOM DATA CLEANING PIPELINE:
+#==================================================================================================
+#STEP 1: Define the raw data
+data_frame_pipeline_dictionary = {
+    'Name':['James','John','Jakob','Jeremiah','Johannan'],
+    'Age':[25,28,None,22,26],
+    'Address':['India','Pakistan','Bangladesh',None,'Pakistan'],
+    'Salary':[10000,None,20000,25000,15000],
+    'Email':['james@g.co',None,'jakob@co','jeremiah@co','johannan@co']
+}
+data_frame_pipeline_dictionary_df = pd.DataFrame(data_frame_pipeline_dictionary)
+print(data_frame_pipeline_dictionary_df)
+
+#define cleaning functions
+#a) remove duplicates:
+def remove_duplicates(df):
+    return df.drop_duplicates()
+
+#b) Handle missing values
+def handle_missing_values(df):
+    df = df.copy()
+    #fill missinng ages with median
+    df['Age'] = df['Age'].fillna(df['Age'].median())
+    #fill missing emails with default value
+    df['Email'] = df['Email'].fillna('unknown@exm.co')
+    #fill missing salary with median salary
+    df['Salary'] = df['Salary'].fillna(df['Salary'].median())
+    #fill address with default
+    df['Address'] = df['Address'].fillna('Default')
+    return df
+
+#c) Standardize the formats
+def standardize_formats(df):
+    df = df.copy()
+    df['Name'] = df['Name'].str.title()
+    df['Address'] = df['Address'].str.upper()
+    df[['Username','Domain']] = df['Email'].str.split('@',expand=True)
+    return df
+
+#d) Filter rows:
+def filter_rows(df):
+    return df[df['Salary']>10000]
+
+#CREATING THE PIPELINE:
+def data_cleaning_pipeline(df):
+    df = df.copy()
+    df = remove_duplicates(df)
+    df = handle_missing_values(df)
+    df = standardize_formats(df)
+    df = filter_rows(df)
+    return df
+
+#apply the pipeline to the DataFrame
+cleaned_data = data_cleaning_pipeline(data_frame_pipeline_dictionary_df)
+print('\n Cleaned Data:')
+print(cleaned_data)
 
 
 
