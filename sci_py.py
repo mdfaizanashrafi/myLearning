@@ -3,6 +3,8 @@ from matplotlib import lines
 import numpy as np
 #constants in scipy
 from scipy import constants
+from scipy.sparse import csr_matrix
+from scipy.sparse.csgraph import floyd_warshall
 from scipy.optimize import curve_fit, differential_evolution, minimize, least_squares, fsolve
 from scipy.optimize import root
 import matplotlib.pyplot as plt
@@ -304,11 +306,14 @@ print(dijkstra(dijkstra_matrix,return_predecessors=True,indices=0))
 '''
 #Floyd Warshall: used to find shortest path between all pairs of elements
 #---------------------------------------------------------------------------
-foyd_arr=np.array([[0,1,2],
-                   [1,0,0],
-                   [2,0,0]])
+foyd_arr=np.array([[0,3,np.inf,7],        #Node 0
+                   [8,0,2,np.inf],        #Node 1
+                   [5,np.inf,0,1],        #Node 2
+                   [2,np.inf,np.inf,0]])  #Node 3
 floyd_matrix=csr_matrix(foyd_arr)
-print(floyd_warshall(floyd_matrix,return_predecessors=True))
+distances,predecessors=floyd_warshall(floyd_matrix,return_predecessors=True)
+print(f"Shortest Distances: {distances}")
+print(f"Predecessors: {predecessors}")
 
 
 
