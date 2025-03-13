@@ -6,6 +6,11 @@ from scipy import constants
 from scipy.optimize import curve_fit, differential_evolution, minimize, least_squares
 from scipy.optimize import root
 import matplotlib.pyplot as plt
+from scipy.sparse import coo_matrix, csr_matrix
+from scipy.sparse.csgraph import connected_components, dijkstra
+from scipy.sparse import csgraph
+from scipy.sparse.csgraph import connected_components, floyd_warshall
+
 '''
 print(constants.liter)
 
@@ -118,7 +123,7 @@ def equations(vars):
 x0=[0.5,0.5]  #inital guess
 solution=root(equations,x0) #syntax: root(fn,inital)
 print(f"Roots (x,y): {solution.x}")
-'''
+
 #Visualization: of circle and line
 #-------------------------------------------
 #linspace: generates linearly spaced vectors or arrays.
@@ -154,6 +159,164 @@ plt.ylabel("$Y$")
 plt.axis('equal')  #ensures that the asoect ratio is equal
 
 plt.show()
+
+#================================================
+#SPARSE MATRIX: data set where most of the elements are zero.
+#======================================================
+#define non zero values, rows indices, col indices
+data=[1,2,3,4]  #only non-zeros are stored
+rows=[0,1,2,3]  #rows position of data
+cols=[0,1,2,3]  #col position of data
+
+#create sparse matrix
+sparse_matrix_coo = coo_matrix((data,(rows,cols)),shape=(4,4)) #syntax: coo_matrix((data,(r,c)),shape=(m,n))
+print(sparse_matrix_coo)
+
+print(sparse_matrix_coo.toarray())  #dense representation
+
+#Using CSR Matrix: Compressed Sparse Row:
+#---------------------------------------------
+#define a dense matrix
+dense_matrix=[[0,0,0,0],
+              [0,2,0,0],
+              [0,0,3,0],
+              [0,0,0,4]]
+
+#convert to CSR format:
+sparse_matrix_csr= csr_matrix(dense_matrix)
+print(f"Sparse Matrix (CSR FOrmat):\n {sparse_matrix_csr}")
+#access non zero elements:
+print(f"Non-Zero elements:\n {sparse_matrix_csr.data}") #non-zero elemets
+print(f"Col indices: \n {sparse_matrix_csr.indices}")  #indices gives col numbers with non zero value
+print(f"Indptr (Row/Index Pointers): \n {sparse_matrix_csr.indptr}")
+
+#OPERATIONS ON SPARSE MATRICES:
+#------------------------------------
+#matrix multiplication:
+A= csr_matrix([[1,0,0],
+               [0,2,0],
+               [0,0,3]])
+B= csr_matrix([[0,4,0],
+               [5,0,0],
+               [0,0,6]])
+
+#multiply matrices
+C= A.dot(B)  #multiplied matrix(C) = A.dot(B)
+print(f"Result of A*B (sparese):\n {C}")
+print(f"Dense Representation of Result:\n {C.toarray()}")
+"""Start
+  |
+  v
+Import csr_matrix from scipy.sparse
+  |
+  v
+Define Sparse Matrix A:
+[[1, 0, 0],
+ [0, 2, 0],
+ [0, 0, 3]]
+  | 
+  |--> Internally, A is stored in CSR format:
+  |    - `data`: [1, 2, 3]
+  |    - `indices`: [0, 1, 2]
+  |    - `indptr`: [0, 1, 2, 3]
+  |
+  v
+Define Sparse Matrix B:
+[[0, 4, 0],
+ [5, 0, 0],
+ [0, 0, 6]]
+  | 
+  |--> Internally, B is stored in CSR format:
+  |    - `data`: [4, 5, 6]
+  |    - `indices`: [1, 0, 2]
+  |    - `indptr`: [0, 1, 2, 3]
+  |
+  v
+Multiply Matrices: C = A.dot(B)
+  |
+  |--> Internal Working of Multiplication:
+  |    1. Iterate over rows of A using `indptr`.
+  |    2. For each row in A, find non-zero elements.
+  |    3. Multiply these with corresponding columns in B.
+  |    4. Accumulate results into new sparse matrix C.
+  |
+  v
+Print Sparse Result (C)
+  |
+  |--> Output:
+  |    (0, 1)    4
+  |    (1, 0)    10
+  |    (2, 2)    18
+  |
+  v
+Convert Sparse Result to Dense Format: C.toarray()
+  |
+  |--> Internal Conversion:
+  |    - Fill zeros for missing indices.
+  |    - Place non-zero values at their respective positions.
+  |
+  v
+Print Dense Representation of Result
+  |
+  |--> Output:
+  |    [[ 0  4  0]
+  |     [10  0  0]
+  |     [ 0  0 18]]
+  |
+  v
+End"""
+
+#Converting between Formats:  .tocsr()  .tocsc()
+#--------------------------------------------------
+#create a COO matrix:
+coo_matrix_eg=coo_matrix([[1,0,0],
+                       [0,2,0],
+                       [0,0,3]])
+#convert to CSR format and CSC format
+csr_conversion = coo_matrix_eg.tocsr()
+csc_conversion= coo_matrix_eg.tocsc()
+print(f"COO Matrix:\n {coo_matrix_eg}")
+print(f"Converted to CSR:\n {csr_conversion}")
+print(f"Converted to CSC:\n {csc_conversion}")
+
+#===================================================
+#SCIPY GRAPHS:
+#===================================================
+#Adjecent Matrix: adjecent matrix is like a map that show how things are connected
+
+adjecent_matrix=[[0,1,1,0], #A talks to BnC
+                 [1,0,0,1], #B talks to AnD
+                 [1,0,0,1], #C talks to AnD
+                 [0,1,1,0]] #D talks to BnC
+
+#convert to a sparse matrix for efficient storage
+convert2sparse=csr_matrix(adjecent_matrix)
+print(convert2sparse)
+
+#connected componenets
+num_componenets, labels=connected_components(convert2sparse)
+print(f"Number of groups of friends: {num_componenets}")
+print(f"Which group each friend belongs to: {labels}")
+
+#Dijkstra: method to find the shortest path in a graph from one element to annother
+#----------------------------------------------------------------------------------------
+#Syntax: dijkstra(csr_matrix,return_predecessors,indices)
+dijkstra_arr = np.array([[0,1,2],
+                         [1,0,0],
+                         [2,0,0]])
+dijkstra_matrix= csr_matrix(dijkstra_arr)
+print(dijkstra(dijkstra_matrix,return_predecessors=True,indices=0))
+'''
+#Floyd Warshall: used to find shortest path between all pairs of elements
+#---------------------------------------------------------------------------
+foyd_arr=np.array([[0,1,2],
+                   [1,0,0],
+                   [2,0,0]])
+floyd_matrix=csr_matrix(foyd_arr)
+print(floyd_warshall(floyd_matrix,return_predecessors=True))
+
+
+
 
 
 
