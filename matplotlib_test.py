@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-'''
+
 x=np.array([80,85,89,93,96,99,104,110,120,124])
 y=np.array([200,230,240,260,290,321,322,345,367,256])
 
@@ -91,7 +91,7 @@ plt.show()
 x_hist= np.random.normal(170,10,250)
 plt.hist(x_hist)
 plt.show()
-'''
+
 #Matplotlib Pie Chart:
 #---------------------
 y_pie=np.array([30,25,20,40])
